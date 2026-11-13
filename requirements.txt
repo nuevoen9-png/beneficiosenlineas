@@ -1,0 +1,4 @@
+certifi
+discord.py
+fastapi
+uvicorn[standard]
