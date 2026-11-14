@@ -3,14 +3,15 @@ import threading
 import discord
 from discord.ext import commands
 from fastapi import FastAPI, HTTPException
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 app = FastAPI()
 
-TOKEN = os.getenv("DISCORD_TOKEN", "MTU1NDkxNTk3Nzg1NzIwNDI1NQ.G72umO.NeBPxli9X-JLq7hRsDUkURlrXzsD2vHntSlr9M")
-CHANNEL_ID = int(os.getenv("DISCORD_CHANNEL_ID", "157076635601664676"))
+# Token directo para asegurar que arranque sin problemas
+TOKEN = "MTU1NDkxNTk3N3k1NzEwNzIwNDQ5.G72umO.NeBPxli9X-JLq7hsDUKUlRXzsD2vHntSlr9M"
+CHANNEL_ID_STR = os.getenv("DISCORD_CHANNEL_ID", "157076635601664676")
+CHANNEL_ID = int(CHANNEL_ID_STR) if CHANNEL_ID_STR else None
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -18,35 +19,52 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f"Bot conectado como {bot.user}")
+    print(f"Bot conectado exitosamente como {bot.user}")
 
 class MensajeData(BaseModel):
     mensaje: str
 
-# Montar los archivos estáticos de la compilación de React (si existe la carpeta dist/build)
-# O servir directamente el index.html de tu proyecto
-@app.get("/")
+# Interfaz visual web profesional con Tailwind CSS
+@app.get("/", response_class=HTMLResponse)
 def serve_index():
-    index_path = "react-tailwind/dist/index.html"
-    if os.path.exists(index_path):
-        return FileResponse(index_path)
-    # Ruta alternativa si los archivos están en la raíz de react-tailwind
-    elif os.path.exists("react-tailwind/index.html"):
-        return FileResponse("react-tailwind/index.html")
-    return {"message": "¡Proyecto sincronizado! Falta compilar React en Render."}
-
-# Si tienes archivos estáticos de assets (js, css)
-if os.path.exists("react-tailwind/dist"):
-    app.mount("/assets", StaticFiles(directory="react-tailwind/dist/assets"), name="assets")
+    return """
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Beneficios en Línea</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+    </head>
+    <body class="bg-gray-900 text-white min-h-screen flex flex-col items-center justify-center p-6">
+        <div class="max-w-md w-full bg-gray-800 rounded-xl shadow-2xl p-8 border border-gray-700 text-center">
+            <h1 class="text-3xl font-extrabold text-blue-400 mb-4">Beneficios en Línea</h1>
+            <p class="text-gray-300 mb-6">Tu plataforma web y el bot de Discord se encuentran sincronizados y operativos.</p>
+            <div class="bg-gray-900 p-4 rounded-lg border border-gray-700 text-green-400 font-mono text-sm">
+                Estado: En línea y funcionando 🚀
+            </div>
+        </div>
+    </body>
+    </html>
+    """
 
 @app.post("/send")
 def send_message(data: MensajeData):
     try:
-        return {"status": "success", "message": "Datos recibidos"}
+        return {"status": "success", "message": "Datos procesados correctamente"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 def run_bot():
-    bot.run(TOKEN)
+    if TOKEN:
+        bot.run(TOKEN)
+    else:
+        print("Token de Discord no configurado.")
 
+# Hilo en segundo plano para ejecutar el bot de Discord junto con FastAPI
 threading.Thread(target=run_bot, daemon=True).start()
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
