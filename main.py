@@ -3,7 +3,8 @@ import threading
 import discord
 from discord.ext import commands
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -22,32 +23,21 @@ async def on_ready():
 class MensajeData(BaseModel):
     mensaje: str
 
-@app.get("/", response_class=HTMLResponse)
-def home():
-    return """
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Beneficios en Línea</title>
-        <style>
-            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 100vh; margin: 0; display: flex; justify-content: center; align-items: center; color: #333; }
-            .card { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; max-width: 400px; width: 100%; }
-            h1 { color: #2d3748; margin-bottom: 15px; font-size: 24px; }
-            p { color: #4a5568; font-size: 16px; line-height: 1.5; }
-            .badge { display: inline-block; background: #c6f6d5; color: #22543d; padding: 6px 12px; border-radius: 20px; font-weight: bold; margin-top: 15px; font-size: 14px; }
-        </style>
-    </head>
-    <body>
-        <div class="card">
-            <h1>¡Bienvenido a Beneficios en Línea!</h1>
-            <p>Tu plataforma web y el sistema de notificaciones de Discord se encuentran sincronizados y listos.</p>
-            <div class="badge">🚀 Sistema Operativo</div>
-        </div>
-    </body>
-    </html>
-    """
+# Montar los archivos estáticos de la compilación de React (si existe la carpeta dist/build)
+# O servir directamente el index.html de tu proyecto
+@app.get("/")
+def serve_index():
+    index_path = "react-tailwind/dist/index.html"
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    # Ruta alternativa si los archivos están en la raíz de react-tailwind
+    elif os.path.exists("react-tailwind/index.html"):
+        return FileResponse("react-tailwind/index.html")
+    return {"message": "¡Proyecto sincronizado! Falta compilar React en Render."}
+
+# Si tienes archivos estáticos de assets (js, css)
+if os.path.exists("react-tailwind/dist"):
+    app.mount("/assets", StaticFiles(directory="react-tailwind/dist/assets"), name="assets")
 
 @app.post("/send")
 def send_message(data: MensajeData):
